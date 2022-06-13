@@ -20,10 +20,6 @@ function App() {
       <main role="main">
         <div className="container">
           <div className="row">
-            <div className="col-6">ddddddddd</div>
-            <div className="col-6"></div>
-          </div>
-          <div className="row">
             <div className="col-12 ">
               <Grid n={50}></Grid>
             </div>

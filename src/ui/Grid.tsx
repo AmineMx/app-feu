@@ -7,17 +7,19 @@ import { sample } from "underscore";
 
 const generateEmptyGrid = (n: number, p: number = 0.1) => {
   const rows = [];
+  //le nombre d’arbres est ntrees=n2×p.
   const ntrees = (n ^ 2) * p;
   for (let i = 0; i < n; i++) {
-    // Math.round(Math.random()))
     const a = Array(n).fill(1);
     const ntr = Array.from(a.keys());
+    //avec la fonction sample du module underscore, on tire au hasard l’échantillon de ntrees arbres parmi les n2 emplacements possibles.
     sample(ntr, ntrees).forEach((i) => (a[i] = 0));
     rows.push(a);
   }
 
   return rows;
 };
+
 //  Voisinage de Von Neumann
 const neighborhoodIndex = [
   [0, 1],
@@ -31,6 +33,7 @@ export const Grid = (props: { n: number }) => {
   const { n } = props;
 
   const [density, setDensity] = useState(10);
+  const [iteration, setIteration] = useState(0);
   const [grid, setGrid] = useState(() => {
     return generateEmptyGrid(n, density / 100);
   });
@@ -43,43 +46,59 @@ export const Grid = (props: { n: number }) => {
       return;
     }
 
+    setIteration((it) => it + 1);
     setGrid((g) => {
       return produce(g, (gridCopy) => {
-        const fireCell: number[][] = [];
+        const toFire: number[][] = [];
+        const toAshes: number[][] = [];
         for (let i = 0; i < n; i++) {
           for (let k = 0; k < n; k++) {
             const cellState = gridCopy[i][k];
+            if (cellState === 0) {
+              continue;
+            }
+            //passage de state en feu vers
             if (cellState === 2) {
-              console.log(cellState);
+              toAshes.push([i, k]);
 
-              gridCopy[i][k] = 3;
-              neighborhoodIndex.forEach(([x, y]) => {
+              continue;
+            }
+            if (cellState === 1) {
+              //pour chaque voisinage de Von Neumann
+
+              for (let [x, y] of neighborhoodIndex) {
                 const newI = i + x;
                 const newK = k + y;
                 if (newI < 0 || newI >= n || newK < 0 || newK >= n) {
                   console.log("out of bound", newI, newK);
 
-                  return;
+                  break;
                 }
-
-                if (gridCopy[newI][newK] === 1) {
-                  fireCell.push([newI, newK]);
+                const s = gridCopy[newI][newK];
+                if (s === 2) {
+                  toFire.push([i, k]);
+                  break;
                 }
-              });
+              }
             }
           }
         }
-        fireCell.forEach(([i, k]) => {
+
+        toFire.forEach(([i, k]) => {
           gridCopy[i][k] = 2;
+        });
+
+        toAshes.forEach(([i, k]) => {
+          gridCopy[i][k] = 3;
         });
       });
     });
 
-    setTimeout(runSimulation, 10);
+    setTimeout(runSimulation, 20);
   }, []);
   const regenrate = useCallback((density: number) => {
     console.log(density);
-
+    setIteration(0);
     setGrid(generateEmptyGrid(n, density / 100));
   }, []);
   return (
@@ -101,6 +120,7 @@ export const Grid = (props: { n: number }) => {
           <Button className="m-2" onClick={() => regenrate(density)}>
             Generate
           </Button>
+          <span>Iteration : {iteration}</span>
         </div>
         <div className="col-4">
           <Form.Label>Density : {density}%</Form.Label>
